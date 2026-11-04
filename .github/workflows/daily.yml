@@ -2,19 +2,17 @@ name: Buddy 加油站每日自动化
 
 on:
   schedule:
-    # GitHub 的 cron 是尽力而为：高负载时会延迟，甚至静默丢弃整次运行。
-    # 因此设三个时段互为备份 —— 只要有一个跑到，当天就完成了。
+    # 策略（2026-11-04 调整）：云端版只作为**晚间兜底**，每天一次。
+    # 正常情况由本机 WorkBuddy 自动化在每天 09:00 完成签到与派猫猫；
+    # 只有本机没跑成（电脑没开机等）时，云端这趟在晚上补上。
     # 脚本是幂等的：已签过只会返回「今日已签过」，名额用完不会重派，
     # 所以多触发不会重复领取。
     #
-    # 间隔取 6 小时，是因为猫猫旅行时长最长 4 小时（travel/config 的
-    # duration_hours_max），这样下一轮运行时它必定已经到家，可以领回礼物。
-    # 三个点都落在 :10，避开 GitHub 文档提示的整点高负载期。
+    # 接口地址必须是 https://www.workbuddy.cn；
+    # 旧值 https://copilot.tencent.com 已失效（404），会导致每天三次失败推送。
     #
     # 注意 cron 按 UTC 计时，下面是 UTC，括号内为北京时间（UTC+8）。
-    - cron: "10 0 * * *"    # 00:10 UTC = 08:10 北京（主时段）
-    - cron: "10 6 * * *"    # 06:10 UTC = 14:10 北京（备份）
-    - cron: "10 12 * * *"   # 12:10 UTC = 20:10 北京（备份）
+    - cron: "10 12 * * *"   # 12:10 UTC = 20:10 北京（晚间兜底，每天仅此一次）
   workflow_dispatch:
 
 permissions:
@@ -50,7 +48,7 @@ jobs:
         env:
           WB_ACCESS_TOKEN: ${{ secrets.WB_ACCESS_TOKEN }}
           FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
-          WB_ENDPOINT: https://copilot.tencent.com
+          WB_ENDPOINT: https://www.workbuddy.cn
           WB_RESULT_FILE: ${{ runner.temp }}/wb_result.json
         run: |
           set -uo pipefail
